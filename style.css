@@ -1,0 +1,101 @@
+/*
+  CSS = how the page looks.
+  Each block picks some elements (the "selector") and sets properties on them.
+*/
+
+/* Applies to the whole page. */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;           /* space between lines of text */
+  background-color: rgb(237, 225, 211);
+  color: rgb(130, 83, 10);
+}
+
+/* Header, main content and footer all share the same centred column. */
+header,
+main,
+footer {
+  max-width: 680px;           /* lines don't get too long on wide screens */
+  margin: 0 auto;             /* "auto" left and right = centred */
+  padding: 0 16px;            /* breathing room on phones */
+}
+
+/* The header: centred text with space above and below. */
+header {
+  text-align: center;
+  padding-top: 4rem;
+  padding-bottom: 2rem;
+}
+
+/* The big heading with your name. */
+h1 {
+  margin: 0;
+  font-size: 3rem;            /* rem = relative to the default text size */
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Anything with class="location". */
+.location {
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Each section: a thin line above it to separate topics. */
+section {
+  border-top: 1px solid rgba(130, 83, 10, 0.3);
+  padding: 1.5rem 0;
+}
+
+/* Section titles (About, Projects, ...). */
+h2 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+}
+
+/* Titles inside a section (a project name, a degree, a job). */
+h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Space between the blocks inside a section. */
+article {
+  margin-bottom: 1.25rem;
+}
+
+/* Paragraphs inside a section: remove the browser's default top gap. */
+article p,
+section > p {
+  margin: 0.25rem 0 0;
+}
+
+/* The small lines with place and dates. */
+.meta {
+  font-size: 0.9rem;
+  opacity: 0.75;              /* slightly faded */
+}
+
+/* Links: same colour as the text, underlined. */
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+/* When the mouse is over a link. */
+a:hover {
+  opacity: 0.7;
+}
+
+/* Footer: links side by side, centred. */
+footer {
+  text-align: center;
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+  border-top: 1px solid rgba(130, 83, 10, 0.3);
+}
+
+footer a {
+  margin: 0 0.75rem;
+}

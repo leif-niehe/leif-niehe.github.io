@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!-- Tells the browser this is a modern HTML page. -->
+<html lang="en">
+
+<!-- The <head> holds information ABOUT the page. None of it shows on the page itself. -->
+<head>
+  <meta charset="UTF-8">
+  <!-- Makes the page scale properly on phones. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- The text shown in the browser tab. -->
+  <title>Leif Niehe</title>
+  <!-- Links in the stylesheet that controls how everything looks. -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- The <body> holds everything visible on the page. -->
+<body>
+
+  <!-- ============ HEADER: name and location ============ -->
+  <header>
+    <h1>Leif Niehe</h1>
+    <p class="location">Kitchener, Ontario</p>
+  </header>
+
+  <!-- <main> holds the main content. Each topic is its own <section>. -->
+  <main>
+
+    <!-- ============ ABOUT ============ -->
+    <section>
+      <h2>About</h2>
+      <p>
+        Mathematics graduate (M.Sc., TU Braunschweig) with a minor in computer science.
+        I write software in Julia and Python, have taught university algebra,
+        and build small tools that automate my own work.
+      </p>
+    </section>
+
+    <!-- ============ PROJECTS ============ -->
+    <section>
+      <h2>Projects</h2>
+
+      <!-- Each project is an <article>: a self-contained block. -->
+      <article>
+        <!-- <a href="..."> is a link. The text between the tags is what you click. -->
+        <h3><a href="https://github.com/leif-niehe/scan-notes">scan-notes</a></h3>
+        <p>
+          A Python tool that turns scanned handwritten notes (PDFs and photos) into
+          searchable Markdown, using Claude's vision through the Claude Code CLI.
+          It splits multi-page scans into separate notes, works out dates, tags notes,
+          and resumes cleanly after an interrupted run.
+        </p>
+      </article>
+
+      <article>
+        <h3><a href="https://github.com/leif-niehe/anki-advanced-public">anki-advanced</a></h3>
+        <p>
+          A spaced-repetition system for advanced English (collocation, register,
+          near-synonyms). Claude runs the tutoring sessions from a written grading
+          rubric, and a small scheduler written with only the Python standard library
+          decides when each card comes back.
+        </p>
+      </article>
+    </section>
+
+    <!-- ============ EDUCATION ============ -->
+    <section>
+      <h2>Education</h2>
+
+      <article>
+        <h3>M.Sc. Mathematics, TU Braunschweig</h3>
+        <!-- class="meta" lets the CSS style these small grey lines all at once. -->
+        <p class="meta">Germany · 2023 – 2026 · Minor: Computer Science</p>
+        <p>Thesis: <em>Solution Recovery in Sparse Polynomial Optimization</em> (implemented in Julia)</p>
+      </article>
+
+      <article>
+        <h3>B.Sc. Mathematics, TU Braunschweig</h3>
+        <p class="meta">Germany · 2019 – 2023 · Minor: Physics</p>
+        <p>Thesis: <em>Effective Bounds on Pólya's Theorem</em></p>
+      </article>
+
+      <article>
+        <h3>Exchange terms</h3>
+        <!-- <ul> = unordered (bulleted) list, <li> = one list item. -->
+        <ul>
+          <li>University of Waterloo, Canada (Fall 2025)</li>
+          <li>Universidad de La Rioja, Spain (Fall 2024)</li>
+          <li>National Tsing Hua University, Taiwan (Fall 2021)</li>
+        </ul>
+      </article>
+    </section>
+
+    <!-- ============ EXPERIENCE ============ -->
+    <section>
+      <h2>Experience</h2>
+
+      <article>
+        <h3>Student Research Assistant, Institute of Applied Algebra</h3>
+        <p class="meta">TU Braunschweig, Germany · 2025</p>
+        <p>
+          Developed polynomial optimization software in Julia, wrote tests and test suites,
+          and worked in a multi-branch Git workflow with code reviews.
+        </p>
+      </article>
+
+      <article>
+        <h3>Teaching Assistant, Abstract Algebra</h3>
+        <p class="meta">TU Braunschweig, Germany · 2023 and 2024</p>
+        <p>
+          Led weekly exercise sessions for computer science and mathematics students
+          and graded their homework.
+        </p>
+      </article>
+    </section>
+
+    <!-- ============ VOLUNTEERING ============ -->
+    <section>
+      <h2>Volunteering</h2>
+
+      <!-- Most recent first, like the other sections. -->
+      <article>
+        <h3>Front Office, Computer Support and Bike Repair</h3>
+        <p class="meta">The Working Centre, Kitchener, Canada · Oct 2026 – present</p>
+        <p>
+          Welcome visitors at the front desk, help people with documents and online
+          applications, and fix up donated bikes at Recycle Cycles.
+        </p>
+      </article>
+
+      <article>
+        <h3>Kitchen Aid and Food Distributor</h3>
+        <p class="meta">Tiny Home Takeout, Kitchener, Canada · Oct – Dec 2025</p>
+        <p>
+          Prepared meals and handed out food and coffee to people in need.
+        </p>
+      </article>
+
+      <article>
+        <h3>Workaway Volunteer</h3>
+        <p class="meta">Spain · Sep 2024 – Jan 2025</p>
+        <p>
+          Garden and animal care, private maths tutoring and childcare.
+        </p>
+      </article>
+
+      <article>
+        <h3>Event Organizer, Erasmus Student Network</h3>
+        <p class="meta">Braunschweig, Germany · 2023 – 2026</p>
+        <p>
+          Organized more than 25 sports and social events for international exchange
+          students, with 10 to 50 attendees each, planning every event within its budget.
+        </p>
+      </article>
+
+      <article>
+        <h3>Guesthouse Volunteer</h3>
+        <p class="meta">White Monkey Dias Rest, Sri Lanka · Feb – Apr 2022</p>
+        <p>
+          Welcomed guests, handled check-in and check-out, and helped with daily operations.
+        </p>
+      </article>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER: contact links ============ -->
+  <footer>
+    <a href="https://www.linkedin.com/in/leif-niehe/">LinkedIn</a>
+    <a href="https://github.com/leif-niehe">GitHub</a>
+  </footer>
+
+</body>
+
+</html>
