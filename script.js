@@ -558,6 +558,7 @@ function openGame() {
   drawBoxes();
   game.hidden = false;
   document.body.style.overflow = 'hidden';          // no page scrolling behind the game
+  prepareSound();                                   // browsers only allow sound after a click
   game.querySelector('.game-close').focus({ preventScroll: true });
 }
 
@@ -585,6 +586,7 @@ function jumpScare() {
     overlay.className = 'scare';
     overlay.setAttribute('aria-hidden', 'true');
     overlay.style.backgroundImage = 'url("jumpscare.jpg")';
+    scream();
     document.body.appendChild(overlay);
     var close = function () {
       overlay.classList.add('closing');
@@ -599,4 +601,86 @@ function jumpScare() {
   };
   if (scareImage.complete && scareImage.naturalWidth) show();
   else { scareImage.onload = show; if (!scareImage.src) scareImage.src = 'jumpscare.jpg'; }
+}
+
+
+/* ============ JUMP SCARE SOUND ============
+   No sound file: the browser makes the sound itself (Web Audio).
+   Three layers: a screeching sweep, a burst of hiss, and a deep thud. */
+var audio = null;
+
+function prepareSound() {
+  var Context = window.AudioContext || window.webkitAudioContext;
+  if (!Context) return;
+  if (!audio) audio = new Context();
+  if (audio.state === 'suspended') audio.resume();
+}
+
+function scream() {
+  if (!audio) return;
+  var now = audio.currentTime;
+
+  // Everything goes through a limiter, so it's loud but never painfully clipped.
+  var limiter = audio.createDynamicsCompressor();
+  limiter.threshold.value = -10;
+  limiter.ratio.value = 12;
+  var master = audio.createGain();
+  master.gain.value = 0.55;
+  limiter.connect(master);
+  master.connect(audio.destination);
+
+  // 1. Screech: two slightly out-of-tune sawtooth tones sliding down, with a fast wobble.
+  [0, 13].forEach(function (detune) {
+    var tone = audio.createOscillator();
+    tone.type = 'sawtooth';
+    tone.frequency.setValueAtTime(1150, now);
+    tone.frequency.exponentialRampToValueAtTime(260, now + 1.1);
+    tone.detune.value = detune * 10;
+    var wobble = audio.createOscillator();
+    var wobbleDepth = audio.createGain();
+    wobble.frequency.value = 23;
+    wobbleDepth.gain.value = 45;
+    wobble.connect(wobbleDepth);
+    wobbleDepth.connect(tone.frequency);
+    var level = audio.createGain();
+    level.gain.setValueAtTime(0, now);
+    level.gain.linearRampToValueAtTime(0.5, now + 0.02);
+    level.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    tone.connect(level);
+    level.connect(limiter);
+    tone.start(now); wobble.start(now);
+    tone.stop(now + 1.25); wobble.stop(now + 1.25);
+  });
+
+  // 2. Hiss: a short burst of filtered noise.
+  var length = Math.floor(audio.sampleRate * 0.8);
+  var buffer = audio.createBuffer(1, length, audio.sampleRate);
+  var samples = buffer.getChannelData(0);
+  for (var i = 0; i < length; i++) samples[i] = Math.random() * 2 - 1;
+  var noise = audio.createBufferSource();
+  noise.buffer = buffer;
+  var band = audio.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 2400;
+  band.Q.value = 0.8;
+  var hiss = audio.createGain();
+  hiss.gain.setValueAtTime(0.9, now);
+  hiss.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+  noise.connect(band);
+  band.connect(hiss);
+  hiss.connect(limiter);
+  noise.start(now);
+
+  // 3. Thud: a deep tone that drops quickly, like a hit.
+  var thud = audio.createOscillator();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(110, now);
+  thud.frequency.exponentialRampToValueAtTime(35, now + 0.5);
+  var thudLevel = audio.createGain();
+  thudLevel.gain.setValueAtTime(1, now);
+  thudLevel.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+  thud.connect(thudLevel);
+  thudLevel.connect(limiter);
+  thud.start(now);
+  thud.stop(now + 0.65);
 }
