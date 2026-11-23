@@ -1,0 +1,11 @@
+# Allowlist: git ignores EVERYTHING in this folder except the files listed below.
+# A stray file (CV draft, original photo, notes) can't be committed by accident.
+# To publish a new file, add a "!filename" line for it here on purpose.
+
+*
+
+!.gitignore
+!index.html
+!style.css
+!photo.jpg
+!favicon.svg
