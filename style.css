@@ -40,6 +40,14 @@ header {
   box-shadow: 0 0 0 2px rgba(130, 83, 10, 0.5);     /* thin brown ring around the gap */
 }
 
+/* Your name and the section titles use a warm serif font.
+   These fonts are already on most computers and phones, so nothing is downloaded. */
+h1,
+h2,
+h3 {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+
 /* The big heading with your name. */
 h1 {
   margin: 0;
@@ -63,7 +71,7 @@ section {
 /* Section titles (About, Projects, ...). */
 h2 {
   margin: 0 0 1rem;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
 }
 
 /* Titles inside a section (a project name, a degree, a job). */
@@ -74,7 +82,7 @@ h3 {
 
 /* Space between the blocks inside a section. */
 article {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
 }
 
 /* Paragraphs inside a section: remove the browser's default top gap. */
@@ -83,21 +91,53 @@ section > p {
   margin: 0.25rem 0 0;
 }
 
-/* The small lines with place and dates. */
-.meta {
-  font-size: 0.9rem;
-  opacity: 0.75;              /* slightly faded */
+/* The description under a title gets a bit more room, so it reads as its own block. */
+article .meta + p {
+  margin-top: 0.5rem;
 }
 
-/* Links: same colour as the text, underlined. */
+/* A gap between two paragraphs that follow each other (like in About). */
+section > p + p {
+  margin-top: 0.75rem;
+}
+
+/* The small lines with place and dates: small capital letters with a little extra
+   spacing, so they look clearly different from both the title and the text. */
+.meta {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Inside an entry, the place/date line sits right under the title. */
+article .meta {
+  margin-top: 0.15rem;
+}
+
+/* Languages: no bullets. Each line is split into two columns,
+   so the levels all start at the same place. */
+.languages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.languages li {
+  display: grid;
+  grid-template-columns: 6rem 1fr;   /* first column 6rem wide for the language */
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+
+/* Links: a deeper rust brown so they stand out from the text, underlined. */
 a {
-  color: inherit;
+  color: rgb(156, 62, 20);
   text-underline-offset: 3px;
 }
 
-/* When the mouse is over a link. */
+/* When the mouse is over a link: the underline gets thicker. */
 a:hover {
-  opacity: 0.7;
+  text-decoration-thickness: 2px;
 }
 
 /* Footer: links side by side, centred. */
@@ -110,4 +150,5 @@ footer {
 
 footer a {
   margin: 0 0.75rem;
+  display: inline-block;      /* lets the links wrap onto a new line on narrow phones */
 }
