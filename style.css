@@ -24,8 +24,20 @@ footer {
 /* The header: centred text with space above and below. */
 header {
   text-align: center;
-  padding-top: 4rem;
+  padding-top: 3rem;
   padding-bottom: 2rem;
+}
+
+/* Your photo: a circle with a thin ring in the text colour. */
+.photo {
+  display: block;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 1.5rem;      /* centred, with space below */
+  border-radius: 50%;         /* 50% turns the square into a circle */
+  object-fit: cover;          /* fills the circle without stretching */
+  border: 3px solid rgb(237, 225, 211);              /* gap in the background colour */
+  box-shadow: 0 0 0 2px rgba(130, 83, 10, 0.5);     /* thin brown ring around the gap */
 }
 
 /* The big heading with your name. */
