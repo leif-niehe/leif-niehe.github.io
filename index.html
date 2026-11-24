@@ -65,7 +65,9 @@
         <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
       </button>
     </div>
-    <div class="progress" aria-hidden="true"><span></span></div>
+    <!-- Reading progress: a plain line, or (with script.js) a Fourier series that gains
+         one more term for every section you reach. -->
+    <div class="progress" aria-hidden="true"><span></span><canvas class="fourier"></canvas></div>
   </nav>
 
   <!-- Slowly moving math curves behind the header (drawn by script.js). -->
@@ -81,6 +83,8 @@
     <div class="photo-wrap">
       <div class="photo-tilt">
         <img class="photo" src="photo.jpg" alt="Portrait of Leif Niehe" width="160" height="160">
+        <!-- Rest the mouse on the photo: it slowly turns into a Julia set (script.js). -->
+        <canvas class="julia" aria-hidden="true"></canvas>
         <span class="shine" aria-hidden="true"></span>
       </div>
       <!-- Secret: click the photo 3 times and this card opens next to it (script.js). -->
@@ -375,6 +379,11 @@
     <a href="https://www.linkedin.com/in/leif-niehe/">LinkedIn</a>
     <a href="https://github.com/leif-niehe">GitHub</a>
     <!-- The current time in Kitchener, filled in by script.js (stays hidden without it). -->
+    <!-- Ulam's prime spiral: grows by one number per second on the page (script.js). -->
+    <div class="ulam" hidden>
+      <canvas class="ulam-canvas" aria-hidden="true"></canvas>
+      <p class="meta ulam-caption" aria-live="off"></p>
+    </div>
     <p class="meta local-time" hidden></p>
     <!-- Update this date whenever the site changes. -->
     <p class="meta updated">Last updated November 2026</p>

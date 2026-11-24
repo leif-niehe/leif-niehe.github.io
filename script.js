@@ -255,6 +255,40 @@ var navLinks = Array.prototype.slice.call(linkBox.querySelectorAll('a'));
 var bar = document.querySelector('.progress span');
 var activeLink = null;
 var scrollQueued = false;
+var allSections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+
+/* The progress line as a Fourier series of a square wave:
+     (4/π) · (sin x + sin 3x / 3 + sin 5x / 5 + ...)
+   With one term it's a smooth wave. Every section you reach adds a term, so it
+   gets squarer, and the little overshoot at each jump (Gibbs phenomenon) appears. */
+var fourier = document.querySelector('.fourier');
+var fourierCtx = fourier.getContext('2d');
+var PERIOD = 46;                                     // pixels per wave
+
+function drawFourier(progress, terms) {
+  var ratio = window.devicePixelRatio || 1;
+  var w = fourier.clientWidth, h = fourier.clientHeight;
+  if (fourier.width !== Math.round(w * ratio)) {
+    fourier.width = Math.round(w * ratio);
+    fourier.height = Math.round(h * ratio);
+  }
+  fourierCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  fourierCtx.clearRect(0, 0, w, h);
+  var end = Math.min(1, progress) * w;
+  if (end < 1) return;
+  fourierCtx.strokeStyle = getComputedStyle(root).getPropertyValue('--link');
+  fourierCtx.lineWidth = 1.4;
+  fourierCtx.lineJoin = 'round';
+  fourierCtx.beginPath();
+  for (var x = 0; x <= end; x += 0.75) {
+    var t = 2 * Math.PI * x / PERIOD, sum = 0;
+    for (var k = 0; k < terms; k++) sum += Math.sin((2 * k + 1) * t) / (2 * k + 1);
+    var y = h / 2 - sum * (4 / Math.PI) * (h / 2 - 1.5) / 1.18;   // 1.18: room for the overshoot
+    if (x === 0) fourierCtx.moveTo(x, y); else fourierCtx.lineTo(x, y);
+  }
+  fourierCtx.stroke();
+}
+document.querySelector('.progress').classList.add('wave');
 
 function updateTopbar() {
   scrollQueued = false;
@@ -270,6 +304,12 @@ function updateTopbar() {
     if (section.getBoundingClientRect().top <= line) current = link;
   });
   if (progress > 0.995) current = navLinks[navLinks.length - 1];
+
+  var reached = 0;
+  allSections.forEach(function (section) {
+    if (section.getBoundingClientRect().top <= line) reached++;
+  });
+  drawFourier(progress, Math.max(1, reached));
 
   if (current !== activeLink) {
     if (activeLink) { activeLink.classList.remove('active'); activeLink.removeAttribute('aria-current'); }
@@ -297,6 +337,7 @@ updateTopbar();
    Puts the email on the clipboard and shows "Copied!" for 2 seconds. */
 function showCopied(button, text) {
   button.textContent = text;
+  if (text === UI_TEXT.copied[currentLang]) confetti(button);   // see the end of this file
   setTimeout(function () { button.textContent = UI_TEXT.copy[currentLang]; }, 2000);
 }
 // Older way of copying, for browsers that block the modern one.
@@ -613,13 +654,15 @@ var langButtons = document.querySelectorAll('.lang-switch button');
 var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
                   'August', 'September', 'October', 'November', 'December'];
 
-function setLanguage(lang) {
+function setLanguage(lang, animate) {
   if (!UI_TEXT.copy[lang]) lang = 'en';
   currentLang = lang;
   root.lang = lang;
 
   translatable.forEach(function (item) {
-    item.el.innerHTML = lang === 'en' ? item.en : TRANSLATIONS[item.key][lang];
+    var next = lang === 'en' ? item.en : TRANSLATIONS[item.key][lang];
+    if (animate && !calm && item.el.innerHTML !== next) flapTo(item.el, next);  // see the end of this file
+    else item.el.innerHTML = next;
   });
 
   // Rotating words: swap the list; the typing carries on with the new words.
@@ -645,7 +688,7 @@ function setLanguage(lang) {
 }
 
 langButtons.forEach(function (button) {
-  button.addEventListener('click', function () { setLanguage(button.dataset.lang); });
+  button.addEventListener('click', function () { setLanguage(button.dataset.lang, true); });
 });
 
 var savedLang = null;
@@ -934,3 +977,244 @@ document.addEventListener('keydown', function (event) {
   typedKeys = (typedKeys + event.key.replace(',', '.')).slice(-5);
   if (typedKeys === '3.141') { typedKeys = ''; toggleMathMode(); }
 });
+
+// The wave is drawn in the link colour, so redraw it when the theme or π mode changes.
+new MutationObserver(updateTopbar).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+
+
+/* ============ JULIA SET IN THE PHOTO ============
+   Rest the mouse on the photo and it slowly turns into a Julia set: all points z
+   where z → z² + c stays bounded. Where the mouse is picks c: the direction from
+   the centre picks a point on the edge of the Mandelbrot set's main cardioid, the
+   distance moves c a little inside (connected shapes) or outside (scattered dust).
+   Computers only, because it needs a mouse resting on the photo. */
+var julia = document.querySelector('.julia');
+
+if (!calm && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  var juliaCtx = julia.getContext('2d');
+  var JULIA_SIZE = 160;                              // pixels computed per side
+  julia.width = julia.height = JULIA_SIZE;
+  var juliaImage = juliaCtx.createImageData(JULIA_SIZE, JULIA_SIZE);
+  var hover = { on: false, x: 0.5, y: 0.5, since: 0, amount: 0, drawnFor: '' };
+  var palette = [];
+
+  // 64 colours from the background through the link colour to the text colour.
+  var readPalette = function () {
+    var probe = document.createElement('span');
+    document.body.appendChild(probe);
+    var rgb = function (name) {
+      probe.style.color = 'var(' + name + ')';
+      return getComputedStyle(probe).color.match(/\d+/g).slice(0, 3).map(Number);
+    };
+    var stops = [rgb('--bg'), rgb('--link'), rgb('--text')];
+    probe.remove();
+    palette = [];
+    for (var i = 0; i < 64; i++) {
+      var t = i / 63 * 2, s = Math.min(1, Math.floor(t)), f = t - s;
+      var a = stops[s], b = stops[Math.min(2, s + 1)];
+      palette.push([0, 1, 2].map(function (k) { return Math.round(a[k] + (b[k] - a[k]) * f); }));
+    }
+  };
+
+  var drawJulia = function () {
+    var angle = Math.atan2(hover.y - 0.5, hover.x - 0.5);
+    var reach = Math.min(1, Math.hypot(hover.x - 0.5, hover.y - 0.5) * 2);
+    var s = 0.92 + 0.16 * reach;                    // < 1 inside the cardioid, > 1 outside
+    var mx = s * Math.cos(angle), my = s * Math.sin(angle);
+    var cx = mx / 2 - (mx * mx - my * my) / 4;      // c = μ/2 − μ²/4
+    var cy = my / 2 - (2 * mx * my) / 4;
+    var key = cx.toFixed(3) + ',' + cy.toFixed(3);
+    if (key === hover.drawnFor) return;
+    hover.drawnFor = key;
+
+    var data = juliaImage.data, MAX = 80, span = 2.7 / JULIA_SIZE;
+    for (var py = 0; py < JULIA_SIZE; py++) {
+      for (var px = 0; px < JULIA_SIZE; px++) {
+        var x = -1.35 + px * span, y = -1.35 + py * span, n = 0;
+        while (n < MAX && x * x + y * y < 16) {
+          var nx = x * x - y * y + cx;
+          y = 2 * x * y + cy;
+          x = nx;
+          n++;
+        }
+        // Points that never escape get the text colour; the rest a smooth shade.
+        var shade = n === MAX ? 63
+          : Math.min(62, Math.floor((n + 1 - Math.log2(Math.log2(x * x + y * y) / 2)) * 2.2));
+        var colour = palette[Math.max(0, shade)];
+        var i = (py * JULIA_SIZE + px) * 4;
+        data[i] = colour[0]; data[i + 1] = colour[1]; data[i + 2] = colour[2]; data[i + 3] = 255;
+      }
+    }
+    juliaCtx.putImageData(juliaImage, 0, 0);
+  };
+
+  var juliaLoop = function (time) {
+    // Fade in after resting 0.8 s, fully there after about 3 s; fade out faster.
+    var target = hover.on ? Math.max(0, Math.min(0.92, (time - hover.since - 800) / 2400)) : 0;
+    hover.amount += (target - hover.amount) * (hover.on ? 0.08 : 0.15);
+    julia.style.opacity = hover.amount.toFixed(3);
+    if (hover.amount > 0.01) drawJulia();
+    if (hover.on || hover.amount > 0.01) requestAnimationFrame(juliaLoop);
+  };
+
+  tilt.addEventListener('pointerenter', function (event) {
+    if (event.pointerType !== 'mouse') return;
+    if (!hover.on && hover.amount < 0.01) {
+      hover.since = performance.now();
+      requestAnimationFrame(juliaLoop);
+    }
+    if (!palette.length) readPalette();
+    hover.on = true;
+  });
+  tilt.addEventListener('pointermove', function (event) {
+    if (event.pointerType !== 'mouse') return;
+    var box = julia.getBoundingClientRect();
+    hover.x = (event.clientX - box.left) / box.width;
+    hover.y = (event.clientY - box.top) / box.height;
+  });
+  tilt.addEventListener('pointerleave', function () { hover.on = false; });
+  new MutationObserver(function () { readPalette(); hover.drawnFor = ''; })
+    .observe(root, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+}
+
+
+/* ============ ULAM'S PRIME SPIRAL IN THE FOOTER ============
+   Write 1, 2, 3, ... in a square spiral and mark the primes: they line up along
+   diagonals, which nobody has fully explained. One new number every second the
+   page is open (paused while the tab is in the background). The view zooms out
+   as the spiral grows. */
+var ulam = document.querySelector('.ulam');
+var ulamCanvas = document.querySelector('.ulam-canvas');
+var ulamCtx = ulamCanvas.getContext('2d');
+var ulamCaption = document.querySelector('.ulam-caption');
+var ulamN = 1;
+var spiral = [[0, 0]];                               // spiral[n − 1] = position of n
+try { ulamN = Math.max(1, +sessionStorage.getItem('ulam') || 1); } catch (e) {}
+
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n % 2 === 0) return n === 2;
+  for (var d = 3; d * d <= n; d += 2) if (n % d === 0) return false;
+  return true;
+}
+
+// Steps of the spiral: 1 right, 1 up, 2 left, 2 down, 3 right, 3 up, ...
+function growSpiral(count) {
+  var dirs = [[1, 0], [0, -1], [-1, 0], [0, 1]];
+  var x = 0, y = 0, leg = 1, dir = 0, done = 0;
+  spiral = [[0, 0]];
+  while (spiral.length < count) {
+    x += dirs[dir][0]; y += dirs[dir][1];
+    spiral.push([x, y]);
+    if (++done === leg) { done = 0; dir = (dir + 1) % 4; if (dir % 2 === 0) leg++; }
+  }
+}
+
+function drawUlam() {
+  if (spiral.length < ulamN) growSpiral(ulamN + 200);
+  var ratio = window.devicePixelRatio || 1, size = ulamCanvas.clientWidth;
+  if (ulamCanvas.width !== Math.round(size * ratio)) {
+    ulamCanvas.width = ulamCanvas.height = Math.round(size * ratio);
+  }
+  ulamCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ulamCtx.clearRect(0, 0, size, size);
+  var style = getComputedStyle(root);
+  var reach = Math.ceil(Math.sqrt(ulamN) / 2) + 1;   // how far from the centre it goes
+  var cell = Math.min(14, size / (2 * reach + 1));
+  for (var n = 1; n <= ulamN; n++) {
+    var p = spiral[n - 1];
+    var cx = size / 2 + p[0] * cell, cy = size / 2 + p[1] * cell;
+    var prime = isPrime(n);
+    ulamCtx.fillStyle = n === ulamN ? style.getPropertyValue('--link')
+                      : prime ? style.getPropertyValue('--text') : style.getPropertyValue('--line');
+    ulamCtx.beginPath();
+    ulamCtx.arc(cx, cy, cell * (prime || n === ulamN ? 0.42 : 0.16), 0, 2 * Math.PI);
+    ulamCtx.fill();
+  }
+  var text = UI_TEXT.ulam[currentLang].replace('{n}', ulamN);
+  ulamCaption.textContent = isPrime(ulamN) ? text + ' ' + UI_TEXT.ulamPrime[currentLang] : text;
+}
+
+ulam.hidden = false;
+drawUlam();
+setInterval(function () {
+  if (document.hidden) return;
+  ulamN++;
+  try { sessionStorage.setItem('ulam', ulamN); } catch (e) {}
+  drawUlam();
+}, 1000);
+new MutationObserver(drawUlam).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class', 'lang'] });
+
+
+/* ============ CONFETTI WHEN THE EMAIL IS COPIED ============
+   A small burst of maths symbols flies out of the Copy button and falls down. */
+var SYMBOLS = ['∑', '∫', 'π', '∞', '√', '∂', '∇', 'ℵ', 'e', 'i', 'φ', '∈', '≅', '∀'];
+
+function confetti(button) {
+  if (calm) return;
+  var box = button.getBoundingClientRect();
+  var colours = ['--link', '--text', '--dot'];
+  var pieces = [];
+  for (var k = 0; k < 26; k++) {
+    var piece = document.createElement('span');
+    piece.className = 'confetti';
+    piece.setAttribute('aria-hidden', 'true');
+    piece.textContent = SYMBOLS[k % SYMBOLS.length];
+    piece.style.color = 'var(' + colours[k % 3] + ')';
+    piece.style.fontSize = (0.8 + Math.random() * 0.7).toFixed(2) + 'rem';
+    document.body.appendChild(piece);
+    var angle = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;   // mostly upwards
+    var speed = 4 + Math.random() * 5;
+    pieces.push({
+      el: piece, x: box.left + box.width / 2, y: box.top + box.height / 2,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      spin: (Math.random() - 0.5) * 20, turn: 0
+    });
+  }
+  var start = performance.now();
+  var fly = function (time) {
+    var age = (time - start) / 1600;                 // 0 → 1 over 1.6 seconds
+    pieces.forEach(function (p) {
+      p.vy += 0.25; p.vx *= 0.985;                   // gravity and a little air
+      p.x += p.vx; p.y += p.vy; p.turn += p.spin;
+      p.el.style.transform = 'translate(' + p.x.toFixed(1) + 'px,' + p.y.toFixed(1) + 'px) rotate(' + p.turn.toFixed(0) + 'deg)';
+      p.el.style.opacity = Math.max(0, 1 - age * age).toFixed(2);
+    });
+    if (age < 1) requestAnimationFrame(fly);
+    else pieces.forEach(function (p) { p.el.remove(); });
+  };
+  requestAnimationFrame(fly);
+}
+
+
+/* ============ SPLIT-FLAP LANGUAGE SWITCH ============
+   Short texts (menu, titles, place lines) rattle through random letters and land
+   on the new word, like an old departure board at a train station. Longer
+   paragraphs flip over once. Called by setLanguage above. */
+var FLAP_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüñéó';
+
+function flapTo(el, html) {
+  clearInterval(el.flapTimer);
+  var plain = !/[<&]/.test(html) && html.length <= 70;
+  if (!plain) {                                     // long text: one quick flip
+    el.innerHTML = html;
+    el.classList.remove('lang-flip');
+    void el.offsetWidth;                             // restart the animation
+    el.classList.add('lang-flip');
+    return;
+  }
+  var target = html.replace(/\s+/g, ' ').trim();
+  var frame = 0;
+  el.flapTimer = setInterval(function () {
+    frame++;
+    var out = '';
+    for (var i = 0; i < target.length; i++) {
+      var ch = target[i];
+      // Each letter keeps flipping until its turn comes, left to right.
+      out += ch === ' ' || frame > 4 + i * 0.5 ? ch
+           : FLAP_LETTERS[Math.floor(Math.random() * FLAP_LETTERS.length)];
+    }
+    el.textContent = out;
+    if (frame > 4 + target.length * 0.5) { clearInterval(el.flapTimer); el.innerHTML = html; }
+  }, 35);
+}

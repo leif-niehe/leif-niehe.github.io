@@ -225,6 +225,11 @@ var UI_TEXT = {
                 de: 'Für c = {c} braucht es mehr als {limit}.',
                 es: 'Para c = {c}, hacen falta más de {limit}.' }
   },
+  // Ulam spiral in the footer. {n} is the newest number.
+  ulam:      { en: 'Ulam’s prime spiral, one number for every second you’ve been here: {n}',
+               de: 'Ulams Primzahlspirale, eine Zahl für jede Sekunde, die du hier bist: {n}',
+               es: 'La espiral de primos de Ulam, un número por cada segundo que llevas aquí: {n}' },
+  ulamPrime: { en: '(a prime!)', de: '(eine Primzahl!)', es: '(¡un primo!)' },
   // Math mode (type 3.141 anywhere on the page).
   mathMode: {
     on:  { en: 'π mode. Type 3.141 again to leave.',
