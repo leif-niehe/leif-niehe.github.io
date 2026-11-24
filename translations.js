@@ -29,6 +29,21 @@ var TRANSLATIONS = {
     es: "Actualmente voluntario en The Working Centre y buscando trabajo en Kitchener-Waterloo."
   },
 
+  /* ---------- Pólya demo ---------- */
+  "Pólya's Theorem, Live": { de: "Der Satz von Pólya, live", es: "El teorema de Pólya, en vivo" },
+  "My bachelor's thesis was about Pólya's theorem: if a polynomial is positive on the triangle where x, y, z ≥ 0, then multiplying it by (x + y + z) often enough makes every coefficient positive. The question is how often is enough.": {
+    de: "In meiner Bachelorarbeit ging es um den Satz von Pólya: Ist ein Polynom auf dem Dreieck mit x, y, z ≥ 0 positiv, dann werden alle Koeffizienten positiv, wenn man es nur oft genug mit (x + y + z) multipliziert. Die Frage ist, wie oft genug ist.",
+    es: "Mi tesis de grado trató sobre el teorema de Pólya: si un polinomio es positivo en el triángulo donde x, y, z ≥ 0, al multiplicarlo suficientes veces por (x + y + z) todos sus coeficientes se vuelven positivos. La pregunta es cuántas veces son suficientes."
+  },
+  "p = x² + y² + z² − <var>c</var>·(xy + yz + zx), multiplied by (x + y + z)<sup><var>N</var></sup>": {
+    de: "p = x² + y² + z² − <var>c</var>·(xy + yz + zx), multipliziert mit (x + y + z)<sup><var>N</var></sup>",
+    es: "p = x² + y² + z² − <var>c</var>·(xy + yz + zx), multiplicado por (x + y + z)<sup><var>N</var></sup>"
+  },
+  "Each dot is one coefficient. The closer c gets to 1, the closer p comes to zero in the middle of the triangle, and the more multiplications it needs.": {
+    de: "Jeder Punkt ist ein Koeffizient. Je näher c an 1 kommt, desto näher kommt p in der Mitte des Dreiecks an null, und desto mehr Multiplikationen braucht es.",
+    es: "Cada punto es un coeficiente. Cuanto más se acerca c a 1, más se acerca p a cero en el centro del triángulo, y más multiplicaciones hacen falta."
+  },
+
   /* ---------- About ---------- */
   "Mathematics graduate (M.Sc., TU Braunschweig) with a minor in computer science. I have taught university algebra, used Julia for research and my thesis, and build small tools that automate my own work.": {
     de: "Mathematikabsolvent (M.Sc., TU Braunschweig) mit Nebenfach Informatik. Ich habe an der Universität Übungen zur Algebra geleitet, Julia für die Forschung und meine Masterarbeit genutzt und baue kleine Tools, die meine eigene Arbeit automatisieren.",
@@ -192,5 +207,29 @@ var UI_TEXT = {
   // {time} is replaced by the time in Kitchener.
   time:    { en: 'It’s {time} in Kitchener right now', de: 'In Kitchener ist es gerade {time} Uhr', es: 'En Kitchener son ahora las {time}' },
   // {date} is replaced by the month and year from the English "Last updated" line.
-  updated: { en: 'Last updated {date}', de: 'Zuletzt aktualisiert: {date}', es: 'Última actualización: {date}' }
+  updated: { en: 'Last updated {date}', de: 'Zuletzt aktualisiert: {date}', es: 'Última actualización: {date}' },
+  // Pólya demo. {bad}, {total}, {N}, {c} and {limit} are filled in by script.js.
+  polya: {
+    play:     { en: 'Play',  de: 'Abspielen', es: 'Reproducir' },
+    pause:    { en: 'Pause', de: 'Pause',     es: 'Pausa' },
+    negative: { en: '{bad} of {total} coefficients are still negative.',
+                de: '{bad} von {total} Koeffizienten sind noch negativ.',
+                es: '{bad} de {total} coeficientes siguen siendo negativos.' },
+    positive: { en: 'All {total} coefficients are positive.',
+                de: 'Alle {total} Koeffizienten sind positiv.',
+                es: 'Los {total} coeficientes son positivos.' },
+    needed:   { en: 'For c = {c}, N = {N} is enough.',
+                de: 'Für c = {c} reicht N = {N}.',
+                es: 'Para c = {c}, basta con N = {N}.' },
+    tooMany:  { en: 'For c = {c}, it takes more than {limit}.',
+                de: 'Für c = {c} braucht es mehr als {limit}.',
+                es: 'Para c = {c}, hacen falta más de {limit}.' }
+  },
+  // Math mode (type 3.141 anywhere on the page).
+  mathMode: {
+    on:  { en: 'π mode. Type 3.141 again to leave.',
+           de: 'π-Modus. Tippe noch mal 3.141 zum Verlassen.',
+           es: 'Modo π. Escribe 3.141 otra vez para salir.' },
+    off: { en: 'Back to normal.', de: 'Zurück zum Normalmodus.', es: 'De vuelta a la normalidad.' }
+  }
 };

@@ -108,9 +108,12 @@ localTime.hidden = false;
 setInterval(showTime, 15000);
 
 
-/* ============ MATH CURVES BEHIND THE HEADER ============
-   Each curve is a sum of Chebyshev polynomials T1..T5 whose coefficients slowly
-   drift, so the curves bend and unbend over time. */
+/* ============ CONTOUR LINES BEHIND THE HEADER ============
+   The lines are level curves p(u, v) = c of a polynomial of degree 4 in two
+   variables, like height lines on a hiking map. Its 15 coefficients slowly drift,
+   so hills and valleys grow, merge and split. The mouse or finger adds a hill
+   where it is. Drawn with "marching squares": the area is cut into small
+   squares, and in each square the line is a straight piece between two edges. */
 var canvas = document.querySelector('.curves');
 var header = document.querySelector('header');
 var ctx = canvas.getContext('2d');
@@ -125,30 +128,77 @@ function sizeCanvas() {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 
+var CELL = 12;                                       // size of one square in pixels
+var LEVELS = [];                                     // heights -3, -2.75, ..., 3
+for (var lv = -12; lv <= 12; lv++) LEVELS.push(lv / 4);
+var field = [];                                      // p at every grid corner
+
+// The coefficients c_ij of u^i v^j (i + j <= 4), each drifting at its own speed.
+// Higher powers get smaller coefficients, so the picture stays calm.
+function coefficients(time) {
+  var c = [];
+  for (var i = 0; i <= 4; i++) {
+    c.push([]);
+    for (var j = 0; i + j <= 4; j++) {
+      var speed = 0.00007 * (1 + 0.31 * i + 0.47 * j);
+      c[i].push(1.6 * Math.sin(time * speed + i * 2.1 + j * 3.7) / (1 + i + j));
+    }
+  }
+  return c;
+}
+
 function drawCurves(time) {
   var w = canvas.clientWidth, h = canvas.clientHeight;
+  var cols = Math.ceil(w / CELL) + 1, rows = Math.ceil(h / CELL) + 1;
+  var scale = 2 / Math.max(w, h);                   // longer side runs from -1 to 1
+  var c = coefficients(time);
+  var bump = 1.4 * pointer.strength;
+
+  // 1. Work out p at every corner of the grid (Horner's scheme in u, then in v).
+  for (var r = 0; r < rows; r++) {
+    var y = r * CELL, v = (y - h / 2) * scale * 1.6;
+    if (!field[r]) field[r] = [];
+    for (var q = 0; q < cols; q++) {
+      var x = q * CELL, u = (x - w / 2) * scale * 1.6;
+      var value = 0;
+      for (var i = 4; i >= 0; i--) {
+        var inner = 0;
+        for (var j = 4 - i; j >= 0; j--) inner = inner * v + c[i][j];
+        value = value * u + inner;
+      }
+      if (bump > 0.01) {                            // the hill under the pointer
+        var dx = (x - pointer.x) / 120, dy = (y - pointer.y) / 120;
+        value += bump * Math.exp(-dx * dx - dy * dy);
+      }
+      field[r][q] = value;
+    }
+  }
+
+  // 2. For each level, walk through the squares and draw the piece of line inside.
   ctx.clearRect(0, 0, w, h);
   ctx.strokeStyle = getComputedStyle(root).getPropertyValue('--curve');
-  ctx.lineWidth = 1.2;
-  for (var i = 0; i < 5; i++) {
-    ctx.beginPath();
-    for (var x = 0; x <= w + 6; x += 6) {
-      var u = Math.min(1, x / w) * 2 - 1;            // -1 .. 1
-      var y = 0;
-      for (var k = 1; k <= 5; k++) {
-        var coefficient = Math.sin(time * 0.00011 * (1 + 0.37 * k + 0.21 * i) + i * 1.7 + k * 2.3) / k;
-        y += coefficient * Math.cos(k * Math.acos(u));   // T_k(u)
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  LEVELS.forEach(function (level) {
+    for (var r = 0; r < rows - 1; r++) {
+      for (var q = 0; q < cols - 1; q++) {
+        var a = field[r][q] - level, b = field[r][q + 1] - level;       // top-left, top-right
+        var d = field[r + 1][q] - level, e = field[r + 1][q + 1] - level; // bottom-left, bottom-right
+        var points = [];
+        var x0 = q * CELL, y0 = r * CELL;
+        // Where the line crosses an edge: the spot where the value passes zero.
+        if ((a < 0) !== (b < 0)) points.push(x0 + CELL * a / (a - b), y0);
+        if ((b < 0) !== (e < 0)) points.push(x0 + CELL, y0 + CELL * b / (b - e));
+        if ((d < 0) !== (e < 0)) points.push(x0 + CELL * d / (d - e), y0 + CELL);
+        if ((a < 0) !== (d < 0)) points.push(x0, y0 + CELL * a / (a - d));
+        for (var k = 0; k + 3 < points.length; k += 4) {
+          ctx.moveTo(points[k], points[k + 1]);
+          ctx.lineTo(points[k + 2], points[k + 3]);
+        }
       }
-      var py = h * (0.14 + 0.17 * i) + y * h * 0.11;
-      // Near the mouse or finger, pull the curve part of the way towards it.
-      if (pointer.strength > 0.01) {
-        var across = (x - pointer.x) / 110, up = (pointer.y - py) / 170;
-        py += (pointer.y - py) * 0.45 * pointer.strength * Math.exp(-across * across - up * up);
-      }
-      if (x === 0) ctx.moveTo(x, py); else ctx.lineTo(x, py);
     }
-    ctx.stroke();
-  }
+  });
+  ctx.stroke();
 }
 
 // Where the mouse or finger is over the header. "strength" eases in and out,
@@ -392,6 +442,158 @@ if (!calm && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
 }
 
 
+/* ============ PÓLYA DEMO ============
+   p = x² + y² + z² − c(xy + yz + zx) is positive on the triangle x, y, z ≥ 0 exactly
+   when c < 1 (its smallest value there is (1 − c)/3, in the middle). Pólya's theorem
+   says (x + y + z)^N · p then has only positive coefficients once N is big enough.
+
+   The numbers kept are "Bernstein coefficients": each coefficient divided by the
+   matching multinomial number. They have the same sign as the real coefficients
+   but stay between −1 and 1, so nothing overflows even for large N. Multiplying by
+   (x + y + z) turns them into weighted averages of their three neighbours. */
+var polyaCanvas = document.querySelector('.polya-canvas');
+var polyaCtx = polyaCanvas.getContext('2d');
+var cSlider = document.querySelector('.polya-c');
+var nSlider = document.querySelector('.polya-n');
+var playButton = document.querySelector('.polya-play');
+var polyaStatus = document.querySelector('.polya-status');
+var POLYA_SEARCH_LIMIT = 600;          // give up looking for the needed N after this
+var neededN = null;                    // smallest N that works for the current c
+var playTimer = null;
+
+// b[i][j] belongs to x^i y^j z^(n−i−j).
+function startCoefficients(c) {
+  return [[1, -c / 2, 1], [-c / 2, -c / 2], [1]];
+}
+
+function multiplyOnce(b, n) {            // degree n -> degree n + 1
+  var next = [];
+  for (var i = 0; i <= n + 1; i++) {
+    next.push([]);
+    for (var j = 0; i + j <= n + 1; j++) {
+      var k = n + 1 - i - j;
+      var sum = 0;
+      if (i > 0) sum += i * b[i - 1][j];
+      if (j > 0) sum += j * b[i][j - 1];
+      if (k > 0) sum += k * b[i][j];
+      next[i].push(sum / (n + 1));
+    }
+  }
+  return next;
+}
+
+function coefficientsFor(c, N) {
+  var b = startCoefficients(c);
+  for (var step = 0; step < N; step++) b = multiplyOnce(b, 2 + step);
+  return b;
+}
+
+function countNegative(b) {
+  var count = 0;
+  b.forEach(function (row) { row.forEach(function (x) { if (x <= 0) count++; }); });
+  return count;
+}
+
+function findNeededN(c) {
+  var b = startCoefficients(c);
+  for (var N = 0; N <= POLYA_SEARCH_LIMIT; N++) {
+    if (countNegative(b) === 0) return N;
+    b = multiplyOnce(b, 2 + N);
+  }
+  return null;
+}
+
+// 0.90 in English, 0,90 in German and Spanish.
+function localNumber(x) {
+  return x.toLocaleString(currentLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function drawPolya() {
+  var c = +cSlider.value, N = +nSlider.value, n = N + 2;
+  var b = coefficientsFor(c, N);
+  var style = getComputedStyle(root);
+  var ratio = window.devicePixelRatio || 1;
+  var w = polyaCanvas.clientWidth, h = polyaCanvas.clientHeight;
+  polyaCanvas.width = w * ratio;
+  polyaCanvas.height = h * ratio;
+  polyaCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  polyaCtx.clearRect(0, 0, w, h);
+
+  // Corners of the triangle: x bottom left, y bottom right, z at the top.
+  var pad = 28, side = Math.min(w - 2 * pad, (h - 2 * pad) / 0.866);
+  var X = { x: (w - side) / 2, y: h - pad };
+  var Y = { x: (w + side) / 2, y: h - pad };
+  var Z = { x: w / 2, y: h - pad - side * 0.866 };
+  var gap = side / n;
+
+  polyaCtx.strokeStyle = style.getPropertyValue('--line');
+  polyaCtx.beginPath();
+  polyaCtx.moveTo(X.x, X.y); polyaCtx.lineTo(Y.x, Y.y); polyaCtx.lineTo(Z.x, Z.y); polyaCtx.closePath();
+  polyaCtx.stroke();
+
+  var positive = style.getPropertyValue('--dot'), negative = style.getPropertyValue('--neg');
+  for (var i = 0; i <= n; i++) {
+    for (var j = 0; i + j <= n; j++) {
+      var k = n - i - j, value = b[i][j];
+      var px = (i * X.x + j * Y.x + k * Z.x) / n, py = (i * X.y + j * Y.y + k * Z.y) / n;
+      // Positive dots grow with their value; negative ones are always big, so they stand out.
+      var size = value > 0 ? Math.min(1, Math.sqrt(value * 2.5)) : 0.85;
+      polyaCtx.fillStyle = value > 0 ? positive : negative;
+      polyaCtx.beginPath();
+      polyaCtx.arc(px, py, Math.max(0.8, Math.min(gap * 0.45, 14) * (0.3 + 0.7 * size)), 0, 2 * Math.PI);
+      polyaCtx.fill();
+    }
+  }
+
+  polyaCtx.fillStyle = style.getPropertyValue('--text');
+  polyaCtx.font = 'italic 15px Georgia, serif';
+  polyaCtx.textAlign = 'center';
+  polyaCtx.fillText('x', X.x - 14, X.y + 16);
+  polyaCtx.fillText('y', Y.x + 14, Y.y + 16);
+  polyaCtx.fillText('z', Z.x, Z.y - Math.min(gap * 0.45, 14) - 6);
+
+  // The sentence under the sliders.
+  var text = UI_TEXT.polya, lang = currentLang;
+  var total = (n + 1) * (n + 2) / 2, bad = countNegative(b);
+  var first = bad ? text.negative[lang].replace('{bad}', bad).replace('{total}', total)
+                  : text.positive[lang].replace('{total}', total);
+  var second = neededN === null ? text.tooMany[lang].replace('{limit}', POLYA_SEARCH_LIMIT)
+                                : text.needed[lang].replace('{N}', neededN);
+  polyaStatus.textContent = first + '\n' + second.replace('{c}', localNumber(c));
+  document.querySelector('.polya-c-value').textContent = localNumber(c);
+  document.querySelector('.polya-n-value').textContent = N;
+}
+
+function stopPlaying() {
+  clearInterval(playTimer);
+  playTimer = null;
+  playButton.textContent = UI_TEXT.polya.play[currentLang];
+}
+
+function newC() {
+  neededN = findNeededN(+cSlider.value);
+  // Let the N slider reach a little past the answer, so the green triangle can be seen.
+  nSlider.max = Math.max(20, Math.min(neededN === null ? 170 : neededN + 5, 170));
+  drawPolya();
+}
+
+cSlider.addEventListener('input', function () { stopPlaying(); newC(); });
+nSlider.addEventListener('input', function () { stopPlaying(); drawPolya(); });
+playButton.addEventListener('click', function () {
+  if (playTimer) { stopPlaying(); return; }
+  if (+nSlider.value >= +nSlider.max) nSlider.value = 0;
+  playButton.textContent = UI_TEXT.polya.pause[currentLang];
+  playTimer = setInterval(function () {
+    if (+nSlider.value >= +nSlider.max) { stopPlaying(); return; }
+    nSlider.value = +nSlider.value + 1;
+    drawPolya();
+  }, 110);
+});
+window.addEventListener('resize', drawPolya);
+new MutationObserver(drawPolya).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+newC();
+
+
 /* ============ LANGUAGE SWITCH (EN / DE / ES) ============
    Finds every text on the page that has a translation in translations.js and
    swaps it. The choice is remembered in the visitor's browser. */
@@ -426,6 +628,8 @@ function setLanguage(lang) {
 
   document.querySelectorAll('.copy').forEach(function (b) { b.textContent = UI_TEXT.copy[lang]; });
   showTime();
+  playButton.textContent = UI_TEXT.polya[playTimer ? 'pause' : 'play'][lang];
+  drawPolya();
 
   // "Last updated November 2026" -> the same month and year in the chosen language.
   var match = updatedEnglish.match(/Last updated (\w+) (\d{4})/);
@@ -684,3 +888,49 @@ function scream() {
   thud.start(now);
   thud.stop(now + 0.65);
 }
+
+
+/* ============ EASTER EGG: π MODE ============
+   Type 3.141 (or 3,141) anywhere on the page: it turns into a LaTeX paper, with
+   Computer Modern type, numbered sections and a ∎ at the end. Type it again to
+   leave. The font is only downloaded the first time someone finds this. */
+var typedKeys = '';
+var mathFontLoaded = false;
+var toast = null;
+var toastTimer = null;
+
+function showToast(text) {
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'math-toast';
+    toast.setAttribute('role', 'status');
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.classList.add('shown');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toast.classList.remove('shown'); }, 3000);
+}
+
+function toggleMathMode() {
+  if (!mathFontLoaded) {
+    var font = document.createElement('link');
+    font.rel = 'stylesheet';
+    font.href = 'https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css';
+    document.head.appendChild(font);
+    mathFontLoaded = true;
+  }
+  root.classList.add('theme-switching');            // the same soft fade as light/dark
+  var on = root.classList.toggle('math-mode');
+  setTimeout(function () { root.classList.remove('theme-switching'); sizeCanvas(); }, 400);
+  showToast(UI_TEXT.mathMode[on ? 'on' : 'off'][currentLang]);
+}
+
+document.addEventListener('keydown', function (event) {
+  var target = event.target;
+  if (!game.hidden || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) && target.type !== 'range') return;
+  if (event.key.length !== 1) return;
+  typedKeys = (typedKeys + event.key.replace(',', '.')).slice(-5);
+  if (typedKeys === '3.141') { typedKeys = ''; toggleMathMode(); }
+});

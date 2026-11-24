@@ -12,6 +12,7 @@
   --line: rgba(130, 83, 10, 0.3);   /* thin dividing lines */
   --land: rgba(130, 83, 10, 0.2);   /* map continents */
   --dot: rgb(74, 140, 82);          /* green "currently" dot */
+  --neg: rgb(190, 58, 44);         /* negative dots in the Pólya demo */
   --curve: rgba(130, 83, 10, 0.13); /* math curves behind the header */
   --bar-bg: rgba(237, 225, 211, 0.88);
   --glow: transparent;              /* spotlight: dark mode only */
@@ -30,6 +31,7 @@
   --line: rgba(232, 214, 190, 0.22);
   --land: rgba(232, 214, 190, 0.2);
   --dot: rgb(120, 196, 128);
+  --neg: rgb(240, 112, 92);
   --curve: rgba(232, 214, 190, 0.1);
   --bar-bg: rgba(36, 27, 18, 0.88);
   --glow: rgba(255, 190, 110, 0.07);
@@ -45,6 +47,7 @@
     --line: rgba(232, 214, 190, 0.22);
     --land: rgba(232, 214, 190, 0.2);
     --dot: rgb(120, 196, 128);
+    --neg: rgb(240, 112, 92);
     --curve: rgba(232, 214, 190, 0.1);
     --bar-bg: rgba(36, 27, 18, 0.88);
     --glow: rgba(255, 190, 110, 0.07);
@@ -1073,4 +1076,156 @@ details[open]::details-content {
 
 @media (prefers-reduced-motion: reduce) {
   .clue-card, .game, .game-boxes.wrong { animation: none; }
+}
+
+
+/* ============ PÓLYA DEMO ============
+   Triangle of dots on the left, sliders on the right. On phones they stack. */
+.polya-formula {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-style: italic;
+  text-align: center;
+  margin: 1rem 0 0.5rem !important;
+}
+
+.polya {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.polya-canvas {
+  flex: 1 1 300px;
+  max-width: 360px;
+  aspect-ratio: 11 / 10;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.polya-controls {
+  flex: 1 1 220px;
+}
+
+.polya-controls label {
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.polya-controls label > span {
+  display: block;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+
+.polya-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--link);
+}
+
+.polya-play {
+  padding: 0.3rem 1.4rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--link);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.polya-status {
+  min-height: 3.2em;
+  white-space: pre-line;      /* the two sentences on their own lines */
+  margin: 0.75rem 0 0.25rem;
+}
+
+.polya-hint {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+
+/* ============ π MODE (type 3.141) ============
+   The page turns into a printed LaTeX paper: white paper, black ink, Computer Modern,
+   numbered sections, justified text and a ∎ at the end. */
+:root.math-mode,
+:root.math-mode[data-theme] {
+  --bg: rgb(255, 255, 250);
+  --text: rgb(20, 20, 20);
+  --link: rgb(29, 63, 143);          /* the dark blue of LaTeX links */
+  --line: rgba(0, 0, 0, 0.25);
+  --land: rgba(0, 0, 0, 0.14);
+  --dot: rgb(46, 125, 50);
+  --neg: rgb(198, 40, 40);
+  --curve: rgba(0, 0, 0, 0.08);
+  --bar-bg: rgba(255, 255, 250, 0.9);
+  --glow: transparent;
+  --card: rgb(255, 255, 255);
+  --box-active: rgba(29, 63, 143, 0.12);
+}
+
+.math-mode body,
+.math-mode body * {
+  font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", Georgia, serif !important;
+}
+
+.math-mode h1 {
+  font-weight: normal;
+  letter-spacing: 0;
+}
+
+.math-mode .photo {
+  filter: grayscale(1) contrast(1.05);   /* like a photo printed in a journal */
+}
+
+/* "1  About", "2  Projects", ... */
+.math-mode main {
+  counter-reset: section;
+}
+
+.math-mode main h2::before {
+  counter-increment: section;
+  content: counter(section) "\2003";
+}
+
+.math-mode main p:not(.polya-formula):not(.polya-controls p),
+.math-mode main li {
+  text-align: justify;
+  hyphens: auto;
+}
+
+.math-mode .meta {
+  text-transform: none;
+  letter-spacing: 0;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* End of proof. */
+.math-mode main::after {
+  content: "\220E";
+  display: block;
+  text-align: right;
+  font-size: 1.3rem;
+}
+
+/* The small message at the bottom when π mode turns on or off. */
+.math-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 30;
+  padding: 0.5rem 1.1rem;
+  color: var(--bg);
+  background: var(--text);
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate(-50%, 0.5rem);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.math-toast.shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }

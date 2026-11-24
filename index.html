@@ -179,6 +179,36 @@
       </article>
     </section>
 
+    <!-- ============ PÓLYA DEMO: the bachelor thesis to play with (drawn by script.js) ============ -->
+    <section id="polya">
+      <h2>Pólya's Theorem, Live</h2>
+      <p>
+        My bachelor's thesis was about Pólya's theorem: if a polynomial is positive on the
+        triangle where x, y, z ≥ 0, then multiplying it by (x + y + z) often enough makes
+        every coefficient positive. The question is how often is enough.
+      </p>
+      <p class="polya-formula">
+        p = x² + y² + z² − <var>c</var>·(xy + yz + zx), multiplied by (x + y + z)<sup><var>N</var></sup>
+      </p>
+      <div class="polya">
+        <canvas class="polya-canvas" width="320" height="290" role="img"
+                aria-label="Triangle of coefficients, green for positive and red for negative"></canvas>
+        <div class="polya-controls">
+          <label>
+            <span><var>c</var> = <output class="polya-c-value">0.90</output></span>
+            <input type="range" class="polya-c" min="0.5" max="0.98" step="0.01" value="0.9">
+          </label>
+          <label>
+            <span><var>N</var> = <output class="polya-n-value">0</output></span>
+            <input type="range" class="polya-n" min="0" max="80" step="1" value="0">
+          </label>
+          <button type="button" class="polya-play">Play</button>
+          <p class="polya-status" aria-live="polite"></p>
+          <p class="polya-hint">Each dot is one coefficient. The closer c gets to 1, the closer p comes to zero in the middle of the triangle, and the more multiplications it needs.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ LANGUAGES ============ -->
     <section id="languages">
       <!-- The greeting changes between German, English and Spanish (script.js). -->
