@@ -255,40 +255,6 @@ var navLinks = Array.prototype.slice.call(linkBox.querySelectorAll('a'));
 var bar = document.querySelector('.progress span');
 var activeLink = null;
 var scrollQueued = false;
-var allSections = Array.prototype.slice.call(document.querySelectorAll('main section'));
-
-/* The progress line as a Fourier series of a square wave:
-     (4/π) · (sin x + sin 3x / 3 + sin 5x / 5 + ...)
-   With one term it's a smooth wave. Every section you reach adds a term, so it
-   gets squarer, and the little overshoot at each jump (Gibbs phenomenon) appears. */
-var fourier = document.querySelector('.fourier');
-var fourierCtx = fourier.getContext('2d');
-var PERIOD = 46;                                     // pixels per wave
-
-function drawFourier(progress, terms) {
-  var ratio = window.devicePixelRatio || 1;
-  var w = fourier.clientWidth, h = fourier.clientHeight;
-  if (fourier.width !== Math.round(w * ratio)) {
-    fourier.width = Math.round(w * ratio);
-    fourier.height = Math.round(h * ratio);
-  }
-  fourierCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  fourierCtx.clearRect(0, 0, w, h);
-  var end = Math.min(1, progress) * w;
-  if (end < 1) return;
-  fourierCtx.strokeStyle = getComputedStyle(root).getPropertyValue('--link');
-  fourierCtx.lineWidth = 1.4;
-  fourierCtx.lineJoin = 'round';
-  fourierCtx.beginPath();
-  for (var x = 0; x <= end; x += 0.75) {
-    var t = 2 * Math.PI * x / PERIOD, sum = 0;
-    for (var k = 0; k < terms; k++) sum += Math.sin((2 * k + 1) * t) / (2 * k + 1);
-    var y = h / 2 - sum * (4 / Math.PI) * (h / 2 - 1.5) / 1.18;   // 1.18: room for the overshoot
-    if (x === 0) fourierCtx.moveTo(x, y); else fourierCtx.lineTo(x, y);
-  }
-  fourierCtx.stroke();
-}
-document.querySelector('.progress').classList.add('wave');
 
 function updateTopbar() {
   scrollQueued = false;
@@ -304,12 +270,6 @@ function updateTopbar() {
     if (section.getBoundingClientRect().top <= line) current = link;
   });
   if (progress > 0.995) current = navLinks[navLinks.length - 1];
-
-  var reached = 0;
-  allSections.forEach(function (section) {
-    if (section.getBoundingClientRect().top <= line) reached++;
-  });
-  drawFourier(progress, Math.max(1, reached));
 
   if (current !== activeLink) {
     if (activeLink) { activeLink.classList.remove('active'); activeLink.removeAttribute('aria-current'); }
@@ -483,158 +443,6 @@ if (!calm && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
 }
 
 
-/* ============ PÓLYA DEMO ============
-   p = x² + y² + z² − c(xy + yz + zx) is positive on the triangle x, y, z ≥ 0 exactly
-   when c < 1 (its smallest value there is (1 − c)/3, in the middle). Pólya's theorem
-   says (x + y + z)^N · p then has only positive coefficients once N is big enough.
-
-   The numbers kept are "Bernstein coefficients": each coefficient divided by the
-   matching multinomial number. They have the same sign as the real coefficients
-   but stay between −1 and 1, so nothing overflows even for large N. Multiplying by
-   (x + y + z) turns them into weighted averages of their three neighbours. */
-var polyaCanvas = document.querySelector('.polya-canvas');
-var polyaCtx = polyaCanvas.getContext('2d');
-var cSlider = document.querySelector('.polya-c');
-var nSlider = document.querySelector('.polya-n');
-var playButton = document.querySelector('.polya-play');
-var polyaStatus = document.querySelector('.polya-status');
-var POLYA_SEARCH_LIMIT = 600;          // give up looking for the needed N after this
-var neededN = null;                    // smallest N that works for the current c
-var playTimer = null;
-
-// b[i][j] belongs to x^i y^j z^(n−i−j).
-function startCoefficients(c) {
-  return [[1, -c / 2, 1], [-c / 2, -c / 2], [1]];
-}
-
-function multiplyOnce(b, n) {            // degree n -> degree n + 1
-  var next = [];
-  for (var i = 0; i <= n + 1; i++) {
-    next.push([]);
-    for (var j = 0; i + j <= n + 1; j++) {
-      var k = n + 1 - i - j;
-      var sum = 0;
-      if (i > 0) sum += i * b[i - 1][j];
-      if (j > 0) sum += j * b[i][j - 1];
-      if (k > 0) sum += k * b[i][j];
-      next[i].push(sum / (n + 1));
-    }
-  }
-  return next;
-}
-
-function coefficientsFor(c, N) {
-  var b = startCoefficients(c);
-  for (var step = 0; step < N; step++) b = multiplyOnce(b, 2 + step);
-  return b;
-}
-
-function countNegative(b) {
-  var count = 0;
-  b.forEach(function (row) { row.forEach(function (x) { if (x <= 0) count++; }); });
-  return count;
-}
-
-function findNeededN(c) {
-  var b = startCoefficients(c);
-  for (var N = 0; N <= POLYA_SEARCH_LIMIT; N++) {
-    if (countNegative(b) === 0) return N;
-    b = multiplyOnce(b, 2 + N);
-  }
-  return null;
-}
-
-// 0.90 in English, 0,90 in German and Spanish.
-function localNumber(x) {
-  return x.toLocaleString(currentLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function drawPolya() {
-  var c = +cSlider.value, N = +nSlider.value, n = N + 2;
-  var b = coefficientsFor(c, N);
-  var style = getComputedStyle(root);
-  var ratio = window.devicePixelRatio || 1;
-  var w = polyaCanvas.clientWidth, h = polyaCanvas.clientHeight;
-  polyaCanvas.width = w * ratio;
-  polyaCanvas.height = h * ratio;
-  polyaCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  polyaCtx.clearRect(0, 0, w, h);
-
-  // Corners of the triangle: x bottom left, y bottom right, z at the top.
-  var pad = 28, side = Math.min(w - 2 * pad, (h - 2 * pad) / 0.866);
-  var X = { x: (w - side) / 2, y: h - pad };
-  var Y = { x: (w + side) / 2, y: h - pad };
-  var Z = { x: w / 2, y: h - pad - side * 0.866 };
-  var gap = side / n;
-
-  polyaCtx.strokeStyle = style.getPropertyValue('--line');
-  polyaCtx.beginPath();
-  polyaCtx.moveTo(X.x, X.y); polyaCtx.lineTo(Y.x, Y.y); polyaCtx.lineTo(Z.x, Z.y); polyaCtx.closePath();
-  polyaCtx.stroke();
-
-  var positive = style.getPropertyValue('--dot'), negative = style.getPropertyValue('--neg');
-  for (var i = 0; i <= n; i++) {
-    for (var j = 0; i + j <= n; j++) {
-      var k = n - i - j, value = b[i][j];
-      var px = (i * X.x + j * Y.x + k * Z.x) / n, py = (i * X.y + j * Y.y + k * Z.y) / n;
-      // Positive dots grow with their value; negative ones are always big, so they stand out.
-      var size = value > 0 ? Math.min(1, Math.sqrt(value * 2.5)) : 0.85;
-      polyaCtx.fillStyle = value > 0 ? positive : negative;
-      polyaCtx.beginPath();
-      polyaCtx.arc(px, py, Math.max(0.8, Math.min(gap * 0.45, 14) * (0.3 + 0.7 * size)), 0, 2 * Math.PI);
-      polyaCtx.fill();
-    }
-  }
-
-  polyaCtx.fillStyle = style.getPropertyValue('--text');
-  polyaCtx.font = 'italic 15px Georgia, serif';
-  polyaCtx.textAlign = 'center';
-  polyaCtx.fillText('x', X.x - 14, X.y + 16);
-  polyaCtx.fillText('y', Y.x + 14, Y.y + 16);
-  polyaCtx.fillText('z', Z.x, Z.y - Math.min(gap * 0.45, 14) - 6);
-
-  // The sentence under the sliders.
-  var text = UI_TEXT.polya, lang = currentLang;
-  var total = (n + 1) * (n + 2) / 2, bad = countNegative(b);
-  var first = bad ? text.negative[lang].replace('{bad}', bad).replace('{total}', total)
-                  : text.positive[lang].replace('{total}', total);
-  var second = neededN === null ? text.tooMany[lang].replace('{limit}', POLYA_SEARCH_LIMIT)
-                                : text.needed[lang].replace('{N}', neededN);
-  polyaStatus.textContent = first + '\n' + second.replace('{c}', localNumber(c));
-  document.querySelector('.polya-c-value').textContent = localNumber(c);
-  document.querySelector('.polya-n-value').textContent = N;
-}
-
-function stopPlaying() {
-  clearInterval(playTimer);
-  playTimer = null;
-  playButton.textContent = UI_TEXT.polya.play[currentLang];
-}
-
-function newC() {
-  neededN = findNeededN(+cSlider.value);
-  // Let the N slider reach a little past the answer, so the green triangle can be seen.
-  nSlider.max = Math.max(20, Math.min(neededN === null ? 170 : neededN + 5, 170));
-  drawPolya();
-}
-
-cSlider.addEventListener('input', function () { stopPlaying(); newC(); });
-nSlider.addEventListener('input', function () { stopPlaying(); drawPolya(); });
-playButton.addEventListener('click', function () {
-  if (playTimer) { stopPlaying(); return; }
-  if (+nSlider.value >= +nSlider.max) nSlider.value = 0;
-  playButton.textContent = UI_TEXT.polya.pause[currentLang];
-  playTimer = setInterval(function () {
-    if (+nSlider.value >= +nSlider.max) { stopPlaying(); return; }
-    nSlider.value = +nSlider.value + 1;
-    drawPolya();
-  }, 110);
-});
-window.addEventListener('resize', drawPolya);
-new MutationObserver(drawPolya).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class'] });
-newC();
-
-
 /* ============ LANGUAGE SWITCH (EN / DE / ES) ============
    Finds every text on the page that has a translation in translations.js and
    swaps it. The choice is remembered in the visitor's browser. */
@@ -671,8 +479,6 @@ function setLanguage(lang, animate) {
 
   document.querySelectorAll('.copy').forEach(function (b) { b.textContent = UI_TEXT.copy[lang]; });
   showTime();
-  playButton.textContent = UI_TEXT.polya[playTimer ? 'pause' : 'play'][lang];
-  drawPolya();
 
   // "Last updated November 2026" -> the same month and year in the chosen language.
   var match = updatedEnglish.match(/Last updated (\w+) (\d{4})/);
@@ -694,7 +500,6 @@ langButtons.forEach(function (button) {
 var savedLang = null;
 try { savedLang = localStorage.getItem('lang'); } catch (e) {}
 if (savedLang && savedLang !== 'en') setLanguage(savedLang);
-
 
 
 /* ============ EASTER EGG: CRYPTIC CLUE ============
@@ -977,9 +782,6 @@ document.addEventListener('keydown', function (event) {
   typedKeys = (typedKeys + event.key.replace(',', '.')).slice(-5);
   if (typedKeys === '3.141') { typedKeys = ''; toggleMathMode(); }
 });
-
-// The wave is drawn in the link colour, so redraw it when the theme or π mode changes.
-new MutationObserver(updateTopbar).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class'] });
 
 
 /* ============ JULIA SET IN THE PHOTO ============

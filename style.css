@@ -12,7 +12,6 @@
   --line: rgba(130, 83, 10, 0.3);   /* thin dividing lines */
   --land: rgba(130, 83, 10, 0.2);   /* map continents */
   --dot: rgb(74, 140, 82);          /* green "currently" dot */
-  --neg: rgb(190, 58, 44);         /* negative dots in the Pólya demo */
   --curve: rgba(130, 83, 10, 0.13); /* math curves behind the header */
   --bar-bg: rgba(237, 225, 211, 0.88);
   --glow: transparent;              /* spotlight: dark mode only */
@@ -31,7 +30,6 @@
   --line: rgba(232, 214, 190, 0.22);
   --land: rgba(232, 214, 190, 0.2);
   --dot: rgb(120, 196, 128);
-  --neg: rgb(240, 112, 92);
   --curve: rgba(232, 214, 190, 0.1);
   --bar-bg: rgba(36, 27, 18, 0.88);
   --glow: rgba(255, 190, 110, 0.07);
@@ -47,7 +45,6 @@
     --line: rgba(232, 214, 190, 0.22);
     --land: rgba(232, 214, 190, 0.2);
     --dot: rgb(120, 196, 128);
-    --neg: rgb(240, 112, 92);
     --curve: rgba(232, 214, 190, 0.1);
     --bar-bg: rgba(36, 27, 18, 0.88);
     --glow: rgba(255, 190, 110, 0.07);
@@ -294,20 +291,6 @@ footer {
   transform-origin: left;
 }
 
-/* The Fourier wave replaces the plain line once script.js runs. It hangs a little
-   below the bar, so it has room to swing up and down. */
-.fourier {
-  display: none;
-  position: absolute;
-  left: 0;
-  top: -5px;
-  width: 100%;
-  height: 12px;
-  pointer-events: none;
-}
-
-.progress.wave span { display: none; }
-.progress.wave .fourier { display: block; }
 
 /* ============ MATH CURVES ============
    A drawing surface across the whole width behind the header, fading out at the bottom. */
@@ -1094,72 +1077,6 @@ details[open]::details-content {
 }
 
 
-/* ============ PÓLYA DEMO ============
-   Triangle of dots on the left, sliders on the right. On phones they stack. */
-.polya-formula {
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  font-style: italic;
-  text-align: center;
-  margin: 1rem 0 0.5rem !important;
-}
-
-.polya {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 1.5rem;
-}
-
-.polya-canvas {
-  flex: 1 1 300px;
-  max-width: 360px;
-  aspect-ratio: 11 / 10;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.polya-controls {
-  flex: 1 1 220px;
-}
-
-.polya-controls label {
-  display: block;
-  margin-bottom: 0.6rem;
-}
-
-.polya-controls label > span {
-  display: block;
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-}
-
-.polya-controls input[type="range"] {
-  width: 100%;
-  accent-color: var(--link);
-}
-
-.polya-play {
-  padding: 0.3rem 1.4rem;
-  font: inherit;
-  font-weight: 600;
-  color: var(--bg);
-  background: var(--link);
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.polya-status {
-  min-height: 3.2em;
-  white-space: pre-line;      /* the two sentences on their own lines */
-  margin: 0.75rem 0 0.25rem;
-}
-
-.polya-hint {
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
-
 /* ============ π MODE (type 3.141) ============
    The page turns into a printed LaTeX paper: white paper, black ink, Computer Modern,
    numbered sections, justified text and a ∎ at the end. */
@@ -1171,7 +1088,6 @@ details[open]::details-content {
   --line: rgba(0, 0, 0, 0.25);
   --land: rgba(0, 0, 0, 0.14);
   --dot: rgb(46, 125, 50);
-  --neg: rgb(198, 40, 40);
   --curve: rgba(0, 0, 0, 0.08);
   --bar-bg: rgba(255, 255, 250, 0.9);
   --glow: transparent;
@@ -1203,7 +1119,7 @@ details[open]::details-content {
   content: counter(section) "\2003";
 }
 
-.math-mode main p:not(.polya-formula):not(.polya-controls p),
+.math-mode main p,
 .math-mode main li {
   text-align: justify;
   hyphens: auto;
